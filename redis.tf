@@ -1,0 +1,137 @@
+# plan to create a redis
+
+locals {
+  # cloud-init config expressed in HCL as doing YAML by hand is painful
+  cloud_config_redis = {
+    # https://cloudinit.readthedocs.io/en/latest/reference/modules.html#users-and-groups
+    users = [
+      {
+        name                = "justask"
+        shell               = "/bin/bash"
+        sudo                = ["ALL=(ALL) NOPASSWD:ALL"]
+        ssh_authorized_keys = local.rs_ssh_keys_public_keys
+      }
+    ]
+    disable_root      = true
+    disable_root_opts = "no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command=\"echo 'Please login as the user \\\"coyote\\\" rather than the user \\\"$DISABLE_USER\\\".';echo;sleep 10;exit 142\""
+    runcmd = [
+      "echo '### Installing software updates ###' && zypper up -y",
+      "echo '### Installing utilities ###' && zypper in -y curl git htop jq ripgrep the_silver_searcher",
+      "echo '### Marking cloud-init runcmd as done ###' && date > /var/lib/.tf_cloud_init_runcmd_done_at",
+    ]
+  }
+}
+
+resource "digitalocean_droplet" "redis" {
+  name   = "tf-retrospring-redis-001"
+  image  = "125976124" # id of "openSUSE-Leap-15.4-JeOS.x86_64"
+  region = "fra1"
+  size   = "s-1vcpu-1gb"
+
+  vpc_uuid = digitalocean_vpc.rs_internal_fra1.id
+
+  ssh_keys = local.rs_ssh_keys_fingerprints
+
+  user_data = <<-YAML
+    #cloud-config
+    ${yamlencode(local.cloud_config_redis)}
+  YAML
+
+  lifecycle {
+    ignore_changes = [
+      ssh_keys, # otherwise terraform needs to destroy and re-create the droplets whenever the ssh keys change
+    ]
+
+    # never destroy our precious redis instance via terraform
+    prevent_destroy = true
+  }
+
+  connection {
+    type = "ssh"
+    user = "justask"
+    host = self.ipv4_address_private
+
+    bastion_host = digitalocean_droplet.bastion.ipv4_address
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [ ! -f /var/lib/.tf_cloud_init_runcmd_done_at ]; do echo '### Waiting for cloud-init to finish ###'; sleep 10; done",
+      "echo '### cloud-init done ###'",
+
+      "echo '### Installing redis and configuring it ###'",
+      "sudo zypper in -y redis",
+      "sudo cp /etc/redis/default.conf.example /etc/redis/6379.conf",
+      "sudo sed -i -e 's/^bind /# we want to listen to all interfaces: bind /' -e 's/^protected-mode yes/protected-mode no/' -e 's,^dir /var/lib/redis/default/,dir /var/lib/redis/6379/,' -e 's,^pidfile /run/redis/default.pid,pidfile /run/redis/6379.pid,' -e 's,^logfile /var/log/redis/default.log,logfile /var/log/redis/6379.log,' /etc/redis/6379.conf",
+      "sudo chmod 0660 /etc/redis/6379.conf",
+      "sudo chown root:redis /etc/redis/6379.conf",
+      "sudo mkdir -p /var/lib/redis/6379",
+      "sudo chmod 0750 /var/lib/redis/6379",
+      "sudo chown redis:redis /var/lib/redis/6379",
+      "echo '### Enabling Redis service ###'",
+      "sudo systemctl enable --now redis@6379.service"
+    ]
+  }
+}
+
+# create record for internal machines (doesn't matter that it's public,
+# as they resolve to a 10.0.0.0/8 net anyway)
+resource "digitalocean_record" "redis_internal" {
+  domain = var.rs_infra_zone
+  type   = "A"
+  name   = "${replace(digitalocean_droplet.redis.name, "/^tf-/", "")}.int"
+  value  = digitalocean_droplet.redis.ipv4_address_private
+  ttl    = 300
+}
+
+# create record for external machines
+resource "digitalocean_record" "redis_external" {
+  domain = var.rs_infra_zone
+  type   = "A"
+  name   = "${replace(digitalocean_droplet.redis.name, "/^tf-/", "")}.ext"
+  value  = digitalocean_droplet.redis.ipv4_address
+  ttl    = 300
+}
+
+# register our droplet to the project
+resource "digitalocean_project_resources" "redis" {
+  project   = digitalocean_project.tf-retrospring.id
+  resources = [digitalocean_droplet.redis.urn]
+}
+
+# only allow SSH access and 6379/tcp from the internal net and the old host
+resource "digitalocean_firewall" "redis" {
+  name = "tf-retrospring-redis-rules"
+
+  droplet_ids = [digitalocean_droplet.redis.id]
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["10.210.16.0/24", "52.59.208.190/32"]
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "6379"
+    source_addresses = ["10.210.16.0/24", "52.59.208.190/32"]
+  }
+
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::0"]
+  }
+}
+
