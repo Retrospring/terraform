@@ -7,6 +7,12 @@ resource "digitalocean_ssh_key" "ssh_keys" {
   public_key = each.value
 }
 
+# since everything is in the root module `locals` are used instead of outputs
+locals {
+  rs_ssh_keys_public_keys  = [for k, v in digitalocean_ssh_key.ssh_keys : v.public_key]
+  rs_ssh_keys_fingerprints = [for k, v in digitalocean_ssh_key.ssh_keys : v.fingerprint]
+}
+
 # variable definitions used in ssh_keys.auto.tfvars {{{
 
 variable "rs_ssh_keys" {
