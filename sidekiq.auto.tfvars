@@ -1,5 +1,5 @@
 # number of instances to spawn
-rs_sidekiq_instances = 0
+rs_sidekiq_instances = 1
 
 # region to deploy sidekiq to
 rs_sidekiq_region = "fra1"

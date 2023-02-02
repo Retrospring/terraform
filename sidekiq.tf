@@ -61,7 +61,7 @@ resource "digitalocean_droplet" "sidekiq" {
   }
 }
 
-# create hostnames for internal machines (doesn't matter that they're public,
+# create record for internal machines (doesn't matter that they're public,
 # as they resolve to a 10.0.0.0/8 net anyway)
 resource "digitalocean_record" "sidekiq_internal" {
   for_each = { for droplet in digitalocean_droplet.sidekiq : droplet.name => droplet }
