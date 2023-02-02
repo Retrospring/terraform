@@ -32,6 +32,8 @@ resource "digitalocean_droplet" "postgres" {
 
   ssh_keys = local.rs_ssh_keys_fingerprints
 
+  backups = true
+
   user_data = <<-YAML
     #cloud-config
     ${yamlencode(local.cloud_config_postgres)}
