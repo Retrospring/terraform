@@ -1,5 +1,5 @@
 # number of instances to spawn
-rs_web_instances = 1
+rs_web_instances = 2
 
 # region to deploy web to
 rs_web_region = "fra1"
