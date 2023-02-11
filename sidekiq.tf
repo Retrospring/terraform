@@ -41,7 +41,9 @@ resource "digitalocean_droplet" "sidekiq" {
 
   lifecycle {
     ignore_changes = [
-      ssh_keys, # otherwise terraform needs to destroy and re-create the droplets whenever the ssh keys change
+      # otherwise terraform needs to destroy and re-create the droplets whenever the ssh keys change
+      ssh_keys,
+      user_data,
     ]
   }
 
@@ -59,6 +61,15 @@ resource "digitalocean_droplet" "sidekiq" {
       "echo '### cloud-init done ###'",
     ]
   }
+}
+
+# update authorized keys directly on the hosts whenever they change
+module "update_ssh_keys_sidekiq" {
+  source = "./modules/update_ssh_keys"
+
+  bastion_host    = digitalocean_droplet.bastion.ipv4_address
+  droplets        = { for droplet in digitalocean_droplet.sidekiq : droplet.name => droplet }
+  ssh_public_keys = local.rs_ssh_keys_public_keys
 }
 
 # create record for internal machines (doesn't matter that they're public,
