@@ -2,4 +2,5 @@
 rs_ssh_keys = {
   jyrki-foxpro = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICW5ya0GBNZ8KOrmHnnceLz0uPhCsZ0xl08A4Vf1YtNo FoxPro"
   cune-mbp     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBjJRX+kUOwOioFgUp8A1OyR3450Lp0K4FB/ZW7aDOJL kjk@MacBook-Pro.home.yiffmon.com"
+  pixel        = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCvXYpf5gvlQG+wIR5SMl5yJkbRz8aNspxHH8CN9EupZQ1rllmPEdGIMbU9RDuWOiq98LPOWJ15Jx07b1CY6FVUoUR0CRfidK2+vIL5zTTefwvoP/ze7jbNltkwoCMGx28srFTsR/Icnz0D9Eae1sVkrFVhCYbzGRBlrCaSp0JCc8m9/otVq4sb1ueBNhv4tQT+z7enMdqAMv3xeq8606rgQ3+FMcNpq3isQa2Vi5u/WPAfJzsBOSd1+IPau8sEzN1nKMKIRxHJ71Xwy089cZLj2E9L+vUd++HwOJkyOs+msSdbtvfnakxsSlrKjGmLQM4jP+H3VLGtPtmCVtpsR6AiUXdNj5pby7BRxJEGWoHSgqheOQVt0FO+DHMuEmup5fiY/vIj5WcZ5ihPMnNPflFAM+I1W5+owGAb2gHaZmVyiNJciGNcMhqKP3gfJFWYLrnVTbqyJ5ZjeCVISzFh47cELx5M8b8+XZblGc8jHxHtgEe4QEbF/R7ywom4j1GWYnzIRdeXl8zfJpQ7WEzveypi/b7sQDT7u1S6d8y6zeqNe+CrjWkhR0yhaSMt7ESHOWS4sP/XJGIRnjvteZvNrJ50R7f6b1vjx/iyMoWWb9a92ztwIxx07RlSHcVxDo25gxz2jwk7mMLvUj2XaGRNzQViyP4sJ29Qx0cS37iGG41Juw== git@pixelde.su"
 }
